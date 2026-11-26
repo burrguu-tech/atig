@@ -51,6 +51,8 @@ const num = (v) => { const x = parseFloat(String(v).replace(',', '.')); return i
 const typeLabel = (t) => (t === 'yarim' ? 'Yarım Gün' : 'Tam Gün');
 const sortTr = (a, b) => a.localeCompare(b, 'tr');
 
+const dailyWorkers = () => DB.workers.filter((w) => w.kind !== 'aylik');
+const monthRangeOf = (y, m) => [ymd(new Date(y, m, 1)), ymd(new Date(y, m + 1, 0))];
 const worker = (id) => DB.workers.find((w) => w.id === id);
 const job = (id) => DB.jobs.find((j) => j.id === id);
 const entriesOf = (fn) => DB.entries.filter(fn);
@@ -356,19 +358,34 @@ function renderWorkers() {
       const days = new Set(me_.map((e) => e.date)).size;
       const dots = last14.map((d) => { const es = DB.entries.filter((e) => e.workerId === w.id && e.date === d); return `<i class="${es.some((e) => e.type === 'tam') ? 'f' : es.length ? 'h' : ''}" title="${fmtDate(d, false)}"></i>`; }).join('');
       return `<div class="card wcard" style="--i:${Math.min(i, 14)}" data-worker="${w.id}">
-        <div class="wtop"><div class="avatar">${esc(initials(w.name))}</div><div style="min-width:0"><div class="wname">${esc(w.name)}</div><div class="wmeta">${esc(w.phone || 'Telefon yok')}</div></div></div>
-        <div><div class="wmeta" style="margin-bottom:7px">Son 14 gün</div><div class="dots">${dots}</div></div>
-        <div class="wfoot"><div><span>Bu ay çalıştığı gün</span><b class="tnum">${days} gün</b></div><div style="text-align:right"><span>Bu ay kazanç</span><b class="tnum">${money(sum(me_))}</b></div></div>
+        <div class="wtop"><div class="avatar">${esc(initials(w.name))}</div><div style="min-width:0"><div class="wname">${esc(w.name)}</div><div class="wmeta">${w.kind === 'aylik' ? 'Aylıkçı' : esc(w.phone || 'Telefon yok')}</div></div></div>
+        ${w.kind === 'aylik' ? `<div><span class="pill full" style="height:26px;padding:0 10px">Aylıkçı</span></div>
+        <div class="wfoot"><div><span>Aylık maaş</span><b class="tnum">${money(w.salary)}</b></div><div style="text-align:right"><span>Bu ay kalan</span><b class="tnum">${money(w.salary - sum((DB.advances || []).filter((a) => a.workerId === w.id && a.date >= ms && a.date <= me)))}</b></div></div>` : `<div><div class="wmeta" style="margin-bottom:7px">Son 14 gün</div><div class="dots">${dots}</div></div>
+        <div class="wfoot"><div><span>Bu ay çalıştığı gün</span><b class="tnum">${days} gün</b></div><div style="text-align:right"><span>Bu ay kazanç</span><b class="tnum">${money(sum(me_))}</b></div></div>`}
       </div>`; }).join('')}</div>`}`;
 }
 function emptyState(icon, title, text, btn = '') {
   return `<div class="empty"><div class="eicon">${icon}</div><h3>${title}</h3><p>${text}</p>${btn}</div>`;
 }
-function openWorkerModal(id = null) {
+function openWorkerModal(id = null, kind = null) {
   const w = id ? worker(id) : null;
+  if (!w && !kind) {
+    modal({
+      title: 'Yeni İşçi', sub: 'İşçinin çalışma türünü seçin',
+      body: `<div class="kind-pick"><button class="kind-btn" data-k="aylik"><b>Aylıkçı</b><span>Sabit aylık maaşı olan işçi</span></button><button class="kind-btn" data-k="yevmiye"><b>Yevmiyeci</b><span>Günlük ücretle çalışan işçi</span></button></div>`,
+      foot: `<button class="btn ghost" data-c>Vazgeç</button>`,
+      onMount: (m, close) => {
+        $('[data-c]', m).onclick = close;
+        $$('[data-k]', m).forEach((b) => (b.onclick = () => { const k = b.dataset.k; close(true); setTimeout(() => openWorkerModal(null, k), 260); }));
+      }
+    });
+    return;
+  }
+  const monthly = (w ? w.kind === 'aylik' : kind === 'aylik');
   modal({
-    title: w ? 'İşçiyi Düzenle' : 'Yeni İşçi',
-    body: `<div class="field"><label>Ad Soyad <em>*</em></label><input class="inp" id="fName" value="${esc(w?.name || '')}" placeholder="Örn. Ahmet Yılmaz" /></div>
+    title: w ? 'İşçiyi Düzenle' : (monthly ? 'Yeni Aylıkçı İşçi' : 'Yeni Yevmiyeci İşçi'),
+    body: monthly ? `<div class="field"><label>Ad Soyad <em>*</em></label><input class="inp" id="fName" value="${esc(w?.name || '')}" placeholder="Örn. Ahmet Yılmaz" /></div>
+      <div class="field"><label>Aylık maaş <em>*</em></label><div class="money-inp"><input class="inp tnum" id="fSalary" type="number" inputmode="decimal" min="0" step="any" placeholder="0" value="${w?.salary ?? ''}" /><span>₺</span></div></div>` : `<div class="field"><label>Ad Soyad <em>*</em></label><input class="inp" id="fName" value="${esc(w?.name || '')}" placeholder="Örn. Ahmet Yılmaz" /></div>
       <div class="field"><label>Telefon</label><input class="inp" id="fPhone" value="${esc(w?.phone || '')}" placeholder="05xx xxx xx xx" /></div>
       <div class="field"><label>Not</label><textarea class="inp" id="fNote" placeholder="Usta, kalfa, IBAN vb.">${esc(w?.note || '')}</textarea></div>`,
     foot: `<button class="btn ghost" data-c>Vazgeç</button><button class="btn primary" data-ok>${w ? 'Kaydet' : 'İşçiyi Ekle'}</button>`,
@@ -378,7 +395,9 @@ function openWorkerModal(id = null) {
         const name = req(m, '#fName'); if (!name) return;
         const dup = DB.workers.find((x) => x.id !== id && x.name.toLocaleLowerCase('tr-TR') === name.toLocaleLowerCase('tr-TR'));
         if (dup) { toast('Bu isimde bir işçi zaten var', true); return; }
-        const data = { name, phone: $('#fPhone', m).value.trim(), note: $('#fNote', m).value.trim() };
+        let data;
+        if (monthly) { const sal = num($('#fSalary', m).value); if (!(sal > 0)) { toast('Aylık maaşı girin', true, 'none'); return; } data = { name, kind: 'aylik', salary: sal, phone: w?.phone || '', note: w?.note || '' }; }
+        else data = { name, kind: 'yevmiye', phone: $('#fPhone', m).value.trim(), note: $('#fNote', m).value.trim() };
         if (w) Object.assign(w, data); else DB.workers.push({ id: uid(), createdAt: new Date().toISOString(), ...data });
         persist(); close(true); toast(w ? 'İşçi güncellendi' : 'İşçi eklendi'); refresh();
       };
@@ -417,8 +436,30 @@ function shiftCal(key, mv) {
 function calcState(wid) {
   return ui.calc[wid] || (ui.calc[wid] = { mode: 'range', from: monthRange(0)[0], to: monthRange(0)[1], preset: 'thisMonth', sel: new Set() });
 }
+function renderMonthlyWorker(w) {
+  const key = 'w_' + w.id; const st = ui.cal[key] || (ui.cal[key] = { y: new Date().getFullYear(), m: new Date().getMonth(), dir: '' });
+  const [a, b] = monthRangeOf(st.y, st.m);
+  const list = (DB.advances || []).filter((x) => x.workerId === w.id && x.date >= a && x.date <= b).sort((x, y) => y.date.localeCompare(x.date));
+  const t = sum(list); const net = (+w.salary || 0) - t;
+  return `
+  <button class="crumb" data-go="workers">${I.back} İşçiler</button>
+  <div class="page-head" style="margin-top:4px">
+    <div class="whead"><div class="avatar lg">${esc(initials(w.name))}</div><div><h1>${esc(w.name)}</h1><p>Aylıkçı · Aylık maaş ${money(w.salary)}</p></div></div>
+    <div class="head-acts"><button class="btn amber" data-act="adv-worker">${I.cash} Avans Ver</button><button class="btn" data-act="edit-worker">${I.edit} Düzenle</button><button class="btn danger" data-act="del-worker">${I.trash} Sil</button></div>
+  </div>
+  <div class="detail stagger">
+    <div class="card" style="--i:0">
+      <div class="cal-head"><div class="cal-title">${MONTHS[st.m]} ${st.y}</div><div class="cal-nav"><button class="btn sm ghost" data-cal="${key}" data-mv="0">Bu ay</button><button class="icon-btn" data-cal="${key}" data-mv="-1">${I.left}</button><button class="icon-btn" data-cal="${key}" data-mv="1">${I.right}</button></div></div>
+      <div class="result"><div class="lbl">Aylık maaş</div><div class="big tnum">${money(w.salary)}</div>
+        <div class="adv-calc"><div><span>${I.cash.replace('<svg', '<svg width="14" height="14"')} Bu ay verilen avans <em>${list.length} adet</em></span><b class="tnum amber">−${money(t)}</b></div>
+        <div class="net"><span>Kalan ödenecek</span><b class="tnum ${net < 0 ? 'neg' : ''}">${money(net)}</b></div>
+        ${net < 0 ? '<p class="kbd" style="color:var(--amber)">Verilen avans, aylık maaştan fazla.</p>' : ''}</div></div>
+    </div>
+    <div style="display:flex;flex-direction:column;gap:18px">${workerAdvCard(w.id)}</div>
+  </div>`;
+}
 function renderWorker() {
-  const w = worker(route.id); const cs = calcState(w.id);
+  const w = worker(route.id); if (w.kind === 'aylik') return renderMonthlyWorker(w); const cs = calcState(w.id);
   const mine = entriesOf((e) => e.workerId === w.id);
   const byDate = {}; mine.forEach((e) => (byDate[e.date] = byDate[e.date] || []).push(e));
   const dayFn = (ds) => {
@@ -580,7 +621,7 @@ function openBulkModal({ jobId = null, date = null } = {}) {
     const ex = jid ? DB.entries.filter((x) => !x.workerId && x.jobId === jid && x.date === date) : [];
     if (ex.length) ext = ex.map((x) => ({ name: x.extName, type: x.type, amount: x.amount, db: true }));
     else ext = ext.filter((x) => !x.db);
-    DB.workers.forEach((w) => {
+    dailyWorkers().forEach((w) => {
       const e = DB.entries.find((x) => x.workerId === w.id && (x.jobId || null) === jid && x.date === date);
       const cur = rowsState[w.id];
       if (e) rowsState[w.id] = { on: true, type: e.type, amount: e.amount, id: e.id };
@@ -590,7 +631,7 @@ function openBulkModal({ jobId = null, date = null } = {}) {
   };
   load();
   const otherJobs = (wid) => { const jid = curJobId(); return DB.entries.filter((x) => x.workerId === wid && x.date === date && (x.jobId || null) !== jid).map(placeName); };
-  const rows = () => [...DB.workers].sort((a, b) => sortTr(a.name, b.name)).map((w, i) => {
+  const rows = () => [...dailyWorkers()].sort((a, b) => sortTr(a.name, b.name)).map((w, i) => {
     const s = rowsState[w.id]; const oj = otherJobs(w.id);
     return `<div class="bulk-row ${s.on ? 'on' : 'off'}" data-w="${w.id}" style="--i:${i}">
       <div class="chk" data-tg>${I.check}</div>
@@ -953,15 +994,11 @@ async function boot() {
   await new Promise((r) => setTimeout(r, 450));
   if (DB.settings?.sound !== false) {
     Sound.unlock(); await new Promise((r) => setTimeout(r, 80));
-    if (!Sound.running()) {
-      const g = $('#tapGate'); g.classList.add('show');
-      await new Promise((r) => { const h = () => { Sound.unlock(); if (window.Assistant && Assistant.unlockVoice) Assistant.unlockVoice(); r(); }; $('#splash').addEventListener('click', h, { once: true }); });
-      g.classList.remove('show'); g.classList.add('gone'); await new Promise((r) => setTimeout(r, 380));
-    }
   }
-  $('#splashLogo').classList.add('in'); Sound.play('intro');
+  $('#splashLogo').classList.add('in'); try { Sound.play('intro'); } catch (e) {}
   setTimeout(() => $('#splash').classList.add('hit'), 820);
   await new Promise((r) => setTimeout(r, 2500));
+  if (window.PinLock) await PinLock.ensure();
   $('#splash').classList.add('out');
   document.body.classList.add('ready');
   render(true);

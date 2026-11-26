@@ -1,5 +1,5 @@
 'use strict';
-const CACHE = 'atig-e6497bac05';
+const CACHE = 'atig-v3-pin';
 const FILES = [
   "./",
   "advances.js",
@@ -44,6 +44,7 @@ const FILES = [
   "fonts/inter-latin-ext-700-normal.woff2",
   "fonts/inter.css",
   "index.html",
+  "lock.js",
   "manifest.webmanifest",
   "styles.css",
   "sw-register.js",

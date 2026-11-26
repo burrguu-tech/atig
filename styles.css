@@ -773,3 +773,47 @@ em.late{color:var(--red2)}em.soon{color:var(--amber)}
 @keyframes sheetUp{from{transform:translateY(100%)}to{transform:none}}
 @keyframes sheetDown{to{transform:translateY(100%)}}
 @media (hover:none){.card:hover,.btn:hover{transform:none}}
+
+/* ===== v3: PIN kilidi, işçi türü seçimi, düzen ===== */
+.lock{position:fixed;inset:0;z-index:300;background:#000;display:grid;place-items:center;padding:20px;transition:opacity .45s}
+.lock.out{opacity:0;pointer-events:none}
+.lk-box{display:flex;flex-direction:column;align-items:center;gap:12px;width:100%;max-width:320px;text-align:center}
+.lk-logo{height:30px;margin-bottom:14px}
+.lk-box h2{font-size:22px;font-weight:600;margin:0}
+.lk-box p{color:var(--tx2);font-size:14px;margin:0;min-height:20px;line-height:1.4}
+.lk-dots{display:flex;gap:16px;margin:18px 0 12px}
+.lk-dots i{width:15px;height:15px;border-radius:50%;border:1.5px solid var(--tx3);transition:all .15s}
+.lk-dots i.on{background:#fff;border-color:#fff;transform:scale(1.1)}
+.lk-dots.shake{animation:lkShake .45s}
+@keyframes lkShake{20%,60%{transform:translateX(-9px)}40%,80%{transform:translateX(9px)}}
+.lk-pad{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;width:100%;max-width:270px}
+.lk-pad button{height:64px;border-radius:50%;background:var(--s3);border:1px solid var(--line2);color:#fff;font-size:24px;font-weight:500;font-family:inherit;cursor:pointer;-webkit-user-select:none;user-select:none;touch-action:manipulation}
+.lk-pad button:active{background:var(--s4);transform:scale(.94)}
+.kind-pick{display:grid;gap:12px}
+.kind-btn{display:flex;flex-direction:column;gap:6px;align-items:flex-start;text-align:left;padding:18px;border-radius:16px;background:var(--s3);border:1px solid var(--line2);color:var(--tx);font-family:inherit;cursor:pointer}
+.kind-btn b{font-size:18px;font-weight:600}.kind-btn span{color:var(--tx2);font-size:13.5px}
+.kind-btn:hover,.kind-btn:active{border-color:var(--red);background:var(--redbg)}
+html,body{max-width:100%;overflow-x:hidden;position:fixed;inset:0;width:100%}
+#view{overflow-x:hidden;overscroll-behavior-x:none;touch-action:pan-y}
+#view *,.m-body *{min-width:0}
+.grid>*,.detail>*,.home-grid>*{min-width:0;max-width:100%}
+img,svg{max-width:100%}
+@media (max-width:760px){
+  #view{padding-left:16px;padding-right:16px;line-height:1.5}
+  .card{padding:18px}
+  .grid{gap:14px}
+  .detail>div{gap:16px!important}
+  .page-head{gap:14px;margin:12px 0 20px}
+  .page-head h1{line-height:1.2}
+  .page-head p{line-height:1.5;margin-top:6px}
+  .stats,.adv-stats{gap:12px!important}
+  .li{padding:12px 4px}
+  .li .t2{margin-top:3px;line-height:1.4}
+  .wcard{gap:16px}
+  .wtop{gap:14px}
+  .field{margin-bottom:16px}
+  .field label{margin-bottom:8px;display:block}
+  .modal{max-width:100vw}
+  h2.sec{gap:10px;margin-bottom:14px;line-height:1.35}
+  .cal-head{gap:10px;margin-bottom:14px}
+}
