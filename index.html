@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+<meta charset="UTF-8" />
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; img-src 'self' data: blob:; media-src 'self' blob: data:; style-src 'self' 'unsafe-inline'; font-src 'self' data:; script-src 'self'; connect-src 'self'; worker-src 'self'" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, maximum-scale=1, user-scalable=no" />
+<meta name="theme-color" content="#000000" />
+<meta name="apple-mobile-web-app-capable" content="yes" />
+<meta name="mobile-web-app-capable" content="yes" />
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+<meta name="apple-mobile-web-app-title" content="ATIG" />
+<meta name="format-detection" content="telephone=no" />
+<link rel="apple-touch-icon" href="assets/apple-touch-icon.png" />
+<link rel="icon" type="image/png" href="assets/icon-192.png" />
+<link rel="manifest" href="manifest.webmanifest" />
+<title>ATIG İşçi Takip</title>
+<link rel="stylesheet" href="fonts/inter.css" />
+<link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+
+  <div id="splash">
+    <div class="loader" id="loader">
+      <div class="loader-text" id="loaderText"></div>
+      <div class="loader-bar"><i></i></div>
+    </div>
+    <div class="flash"></div>
+    <div class="splash-logo" id="splashLogo">
+      <div class="wipe"><img src="assets/logo.png" alt="ATIG" /></div>
+      <div class="splash-line"></div>
+      <div class="splash-sub">İŞÇİ &amp; İŞ TAKİP</div>
+    </div>
+    <div class="tap-gate" id="tapGate"><div class="tg-ring"><i></i><i></i></div><b>Başlamak için dokunun</b><span>Sesli açılış için ekrana bir kez dokunun</span></div>
+  </div>
+
+  <div id="app">
+    <div id="bgGlow"></div>
+    <main id="view"></main>
+    <nav id="dock">
+      <div class="dock-indicator" id="dockIndicator"></div>
+    </nav>
+  </div>
+
+  <div id="modalRoot"></div>
+  <div id="toastRoot"></div>
+  <script src="webstore.js"></script>
+  <script src="app.js"></script>
+  <script src="debts.js"></script>
+  <script src="advances.js"></script>
+  <script src="assistant.js"></script>
+  <script src="sw-register.js"></script>
+</body>
+</html>
